@@ -103,11 +103,25 @@ Upgrading from Solr 5.2
 * The "name" parameter in ADDREPLICA Collections API call has be deprecated. One cannot specify
   the core name for a replica. See SOLR-7499 for more info.
 
+* The ShardHandler interface has changed. The interface used to provide a
+  `checkDistributed` function which doubled up in purpose to determine if the
+  request is distributed, and to prepare for distributed requests. This unfortunately
+  meant that the object had to be instantiated even when the request is not
+  distributed. The task of initially determining if the request is distributed
+  is now done by SearchHandler using the distrib/shards parameters, and a
+  ShardHandler object is created only if the request is distributed. The interface
+  now has a `prepDistributed` function instead of the `checkDistributed` function,
+  which can then be used to prepare for the distributed request. Users with custom
+  ShardHandler implementations would need to modify their code to this effect.
+
 Detailed Change List
 ----------------------
 
 New Features
 ----------------------
+
+* SOLR-7724: SolrJ now supports parsing the output of the clustering component. 
+  (Alessandro Benedetti via Dawid Weiss)
 
 * SOLR-6273: Cross Data Center Replication. Active/passive replication for separate
   SolrClouds hosted on separate data centers. (Renaud Delbru, Yonik Seeley via Erick Erickson)
@@ -140,6 +154,10 @@ New Features
   classes can be used to make requests to the Schema API. (Sven Windisch, Marius Grama via shalin)
 
 * SOLR-7651: New response format added wt=smile (noble)
+
+* SOLR-4212: SOLR-6353: Let facet queries and facet ranges hang off of pivots. Example:
+  facet.range={!tag=r1}price&facet.query={!tag=q1}somequery&facet.pivot={!range=r1 query=q1}category,manufacturer
+  (Steve Molloy, hossman, shalin)
 
 Bug Fixes
 ----------------------
@@ -186,6 +204,20 @@ Bug Fixes
 * SOLR-7664: Throw correct exception (RemoteSolrException) on receiving a HTTP 413.
   (Ramkumar Aiyengar, Eirik Lygre)
 
+* SOLR-6686: facet.threads can return wrong results when using facet.prefix multiple
+  times on same field. (Michael Ryan, Tim Underwood via shalin)
+
+* SOLR-7673: Race condition in shard splitting can cause operation to hang indefinitely
+  or sub-shards to never become active. (shalin)
+
+* SOLR-7741: Add missing fields to SolrIndexerConfig.toMap
+  (Mike Drob, Christine Poerschke via Ramkumar Aiyengar)
+  
+* SOLR-7748: Fix bin/solr to start on IBM J9. (Shai Erera)
+
+* SOLR-7143: MoreLikeThis Query parser should handle multiple field names
+  (Jens Wille, Anshum Gupta)
+
 Optimizations
 ----------------------
 
@@ -194,6 +226,9 @@ Optimizations
 * SOLR-7714: Reduce SearchHandler's use of ShardHandler objects across shards in a search,
   from one for each shard and the federator, to just one for the federator.
   (Christine Poerschke via Ramkumar Aiyengar)
+
+* SOLR-7751: Minor optimizations to QueryComponent.process (reduce eager instantiations,
+  cache method calls) (Christine Poerschke via Ramkumar Aiyengar)
 
 Other Changes
 ----------------------
@@ -250,6 +285,19 @@ Other Changes
 
 * SOLR-7711: Correct initial capacity for the list that holds the default components for the SearchHandler
   (Christine Poerschke via Varun Thacker)
+
+* SOLR-7485: Replace shards.info occurrences with ShardParams.SHARDS_INFO
+  (Christine Poerschke via Ramkumar Aiyengar)
+
+* SOLR-7710: Replace async occurrences with CommonAdminParams.ASYNC
+  (Christine Poerschke, Ramkumar Aiyengar)
+
+* SOLR-7712: fixed test to account for aggregate floating point precision loss (hossman)
+
+* SOLR-7740: Fix typo bug with TestConfigOverlay (Christine Poerschke via Ramkumar Aiyengar)
+
+* SOLR-7750: Change TestConfig.testDefaults to cover all SolrIndexConfig fields
+  (Christine Poerschke via Ramkumar Aiyengar)
 
 ==================  5.2.1 ==================
 

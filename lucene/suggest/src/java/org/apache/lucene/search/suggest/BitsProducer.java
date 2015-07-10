@@ -1,4 +1,4 @@
-package org.apache.lucene.search.join;
+package org.apache.lucene.search.suggest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,30 +19,19 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.Bits;
 
-/**
- * A {@link Filter} that produces {@link BitDocIdSet}s.
- */
-public abstract class BitDocIdSetFilter extends Filter {
+/** A producer of {@link Bits} per segment. */
+public abstract class BitsProducer {
 
-  /** Sole constructor, typically called from sub-classes. */
-  protected BitDocIdSetFilter() {}
+  /** Sole constructor, typically invoked by sub-classes. */
+  protected BitsProducer() {}
 
-  /**
-   * Same as {@link #getDocIdSet(LeafReaderContext, Bits)} but does not take
-   * acceptDocs into account and guarantees to return a {@link BitDocIdSet}.
-   */
-  public abstract BitDocIdSet getDocIdSet(LeafReaderContext context) throws IOException;
-
-  @Override
-  public final DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-    return BitsFilteredDocIdSet.wrap(getDocIdSet(context), acceptDocs);
-  }
+  /** Return {@link Bits} for the given leaf. The returned instance must
+   *  be non-null and have a {@link Bits#length() length} equal to
+   *  {@link LeafReader#maxDoc() maxDoc}. */
+  public abstract Bits getBits(LeafReaderContext context) throws IOException;
 
 }

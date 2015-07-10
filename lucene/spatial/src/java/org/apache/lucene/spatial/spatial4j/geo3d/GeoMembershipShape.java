@@ -23,6 +23,6 @@ package org.apache.lucene.spatial.spatial4j.geo3d;
  *
  * @lucene.experimental
  */
-public interface GeoMembershipShape extends GeoShape, Membership {
+public interface GeoMembershipShape extends GeoShape, GeoOutsideDistance, Membership {
 
 }

@@ -1467,33 +1467,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
-  public void testNoSegmentFile() throws IOException {
-    BaseDirectoryWrapper dir = newDirectory(random(), NoLockFactory.INSTANCE);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                           .setMaxBufferedDocs(2));
-
-    Document doc = new Document();
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    customType.setStoreTermVectors(true);
-    customType.setStoreTermVectorPositions(true);
-    customType.setStoreTermVectorOffsets(true);
-    doc.add(newField("c", "val", customType));
-    w.addDocument(doc);
-    w.addDocument(doc);
-    IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                            .setMaxBufferedDocs(2)
-                                            .setOpenMode(OpenMode.CREATE));
-
-    w2.close();
-    // If we don't do that, the test fails on Windows
-    w.rollback();
-
-    // This test leaves only segments.gen, which causes
-    // DirectoryReader.indexExists to return true:
-    dir.setCheckIndexOnClose(false);
-    dir.close();
-  }
-
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
@@ -1638,7 +1611,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Field contentField = new Field("content", "", customType);
     doc.add(contentField);
 
-    w = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(TestUtil.getDefaultCodec());
+
+    w = new RandomIndexWriter(random(), dir, iwc);
 
     contentField.setStringValue("other");
     w.addDocument(doc);
@@ -2424,7 +2400,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
-    IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
+    IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
@@ -2594,7 +2570,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(null);
     // use an infostream that "takes a long time" to commit
-    final IndexWriter iw = RandomIndexWriter.mockIndexWriter(dir, iwc, new RandomIndexWriter.TestPoint() {
+    final IndexWriter iw = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if (message.equals("finishStartCommit")) {
